@@ -19,34 +19,35 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.async.test.simple;
+package org.jboss.async;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 
 /**
+ * Based on the context we redirect to the correct invocation handler.
+ *
  * @author <a href="cdewolf@redhat.com">Carlo de Wolf</a>
  */
-public class LongRunningBean implements LongRunning
+public class SwitchingInvocationHandler implements InvocationHandler
 {
-   public int add(int a, int b)
+   private InvocationHandler defaultHandler;
+
+   public static final ThreadLocal<InvocationHandler> currentHandler = new ThreadLocal<InvocationHandler>();
+
+   SwitchingInvocationHandler(InvocationHandler defaultHandler)
    {
-      return a + b;
+      assert defaultHandler != null : "defaultHandler is null";
+      this.defaultHandler = defaultHandler;
    }
 
-   public int counter()
+   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
    {
-      long end = System.currentTimeMillis() + 5000;
-      int counter = 0;
-      while(System.currentTimeMillis() < end && !Thread.interrupted())
-      {
-         try
-         {
-            Thread.sleep(500);
-         }
-         catch (InterruptedException e)
-         {
-            Thread.currentThread().interrupt();
-         }
-         counter++;
-      }
-      return counter;
+      InvocationHandler handler = currentHandler.get();
+      if(handler == null)
+         handler = defaultHandler;
+      else
+         currentHandler.remove();         
+      return handler.invoke(proxy, method, args);
    }
 }

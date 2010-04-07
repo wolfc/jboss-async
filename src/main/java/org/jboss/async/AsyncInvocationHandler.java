@@ -39,9 +39,12 @@ public class AsyncInvocationHandler implements InvocationHandler
 
    static
    {
+      // TODO: expand with more primitives
       returnValues.put(Integer.TYPE, 0);
    }
 
+   private static ThreadLocal<Future<?>> currentFuture = new ThreadLocal<Future<?>>();
+   
    private ExecutorService executor;
    private Object target;
 
@@ -49,6 +52,21 @@ public class AsyncInvocationHandler implements InvocationHandler
    {
       this.executor = executor;
       this.target = target;
+   }
+
+   public static <R> Future<R> divine()
+   {
+      try
+      {
+         Future<R> future = (Future<R>) currentFuture.get();
+         if(future == null)
+            throw new IllegalStateException("Can't divine the future if nothing is happening.");
+         return future;
+      }
+      finally
+      {
+         currentFuture.remove();
+      }
    }
 
    public Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable
@@ -73,7 +91,7 @@ public class AsyncInvocationHandler implements InvocationHandler
          }
       };
       Future<?> future = executor.submit(task);
-      Async.setCurrentFuture(future);
+      currentFuture.set(future);
       return returnValues.get(method.getReturnType());
    }
 }

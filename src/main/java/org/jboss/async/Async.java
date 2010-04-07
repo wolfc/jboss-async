@@ -27,6 +27,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static org.jboss.async.AsyncInvocationHandler.divine;
+
 /**
  * @author <a href="cdewolf@redhat.com">Carlo de Wolf</a>
  */
@@ -35,24 +37,30 @@ public class Async
    private static ExecutorService defaultExecutor = Executors.newFixedThreadPool(10);
    private static ThreadLocal<Future<?>> currentFuture = new ThreadLocal<Future<?>>();
 
+   public static <T> T async(T obj)
+   {
+      return async(obj, defaultExecutor);
+   }
+
+   public static <T> T async(T obj, ExecutorService executor)
+   {
+      SwitchingInvocationHandler.currentHandler.set(new AsyncInvocationHandler(executor, obj));
+      return obj;
+   }
+   
    @SuppressWarnings("unused")
    public static <R> Future<R> call(R result)
    {
-      try
-      {
-         return (Future<R>) currentFuture.get();
-      }
-      finally
-      {
-         currentFuture.remove();
-      }
+      // TODO: assert result
+      return divine();
    }
 
    public static <T> T proxy(Class<T> expectedType, T obj)
    {
       ClassLoader loader = Thread.currentThread().getContextClassLoader();
       Class<?> interfaces[] = { expectedType };
-      InvocationHandler handler = new AsyncInvocationHandler(defaultExecutor, obj);
+      //InvocationHandler handler = new AsyncInvocationHandler(defaultExecutor, obj);
+      InvocationHandler handler = new SwitchingInvocationHandler(new DirectInvocationHandler(obj));
       return expectedType.cast(Proxy.newProxyInstance(loader, interfaces, handler));
    }
 

@@ -26,5 +26,17 @@ package org.jboss.async.test.simple;
  */
 public interface LongRunning
 {
+   /**
+    * For testing fast calls.
+    * @param a
+    * @param b
+    * @return a + b
+    */
+   int add(int a, int b);
+
+   /**
+    * For testing slow calls.
+    * @return 10 after some time
+    */
    int counter();
 }

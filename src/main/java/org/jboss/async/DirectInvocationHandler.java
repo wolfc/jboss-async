@@ -19,34 +19,40 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.async.test.simple;
+package org.jboss.async;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author <a href="cdewolf@redhat.com">Carlo de Wolf</a>
  */
-public class LongRunningBean implements LongRunning
+public class DirectInvocationHandler implements InvocationHandler
 {
-   public int add(int a, int b)
+   private Object target;
+
+   DirectInvocationHandler(Object target)
    {
-      return a + b;
+      assert target != null : "target is null";
+      this.target = target;
    }
 
-   public int counter()
+   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
    {
-      long end = System.currentTimeMillis() + 5000;
-      int counter = 0;
-      while(System.currentTimeMillis() < end && !Thread.interrupted())
+      try
       {
-         try
-         {
-            Thread.sleep(500);
-         }
-         catch (InterruptedException e)
-         {
-            Thread.currentThread().interrupt();
-         }
-         counter++;
+         return method.invoke(target, args);
       }
-      return counter;
+      catch(InvocationTargetException e)
+      {
+         Throwable cause = e.getCause();
+         // from most plausible to least
+         if(cause instanceof Exception)
+            throw (Exception) cause;
+         if(cause instanceof Error)
+            throw (Error) cause;
+         throw e;
+      }
    }
 }
