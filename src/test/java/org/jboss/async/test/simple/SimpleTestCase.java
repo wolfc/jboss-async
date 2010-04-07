@@ -37,6 +37,30 @@ import static org.junit.Assert.*;
 public class SimpleTestCase
 {
    @Test
+   public void testAlternative() throws Exception
+   {
+      LongRunning bean = new LongRunningBean();
+
+      LongRunning proxy = proxy(LongRunning.class, bean);
+
+      long start = System.currentTimeMillis();
+      Future<Integer> result1 = async().call(proxy.counter());
+      Future<Integer> result2 = async().call(proxy.counter());
+      Future<Integer> result3 = async().call(proxy.counter());
+
+      assertNotNull(result1);
+      assertNotNull(result2);
+      assertNotNull(result3);
+
+      // the second result should be in right away after the first
+      // TODO: depends on scheduling
+      int actual = result1.get(10, SECONDS) + result2.get(1, SECONDS) + result3.get(1, SECONDS);
+      assertEquals(30, actual);
+      long delta = System.currentTimeMillis() - start;
+      assertTrue(delta < 8000);
+   }
+
+   @Test
    public void testAsync() throws Exception
    {
       LongRunning bean = new LongRunningBean();

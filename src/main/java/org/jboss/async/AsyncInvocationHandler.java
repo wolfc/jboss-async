@@ -48,6 +48,11 @@ public class AsyncInvocationHandler implements InvocationHandler
    private ExecutorService executor;
    private Object target;
 
+   public AsyncInvocationHandler(ExecutorService executor)
+   {
+      this.executor = executor;
+   }
+
    public AsyncInvocationHandler(ExecutorService executor, Object target)
    {
       this.executor = executor;
@@ -69,14 +74,17 @@ public class AsyncInvocationHandler implements InvocationHandler
       }
    }
 
-   public Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable
+   public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
    {
       Callable<?> task = new Callable<Object>() {
          public Object call() throws Exception
          {
             try
             {
-               return method.invoke(target, args);
+               Object obj = target;
+               if(obj == null)
+                  obj = proxy;
+               return method.invoke(obj, args);
             }
             catch(InvocationTargetException e)
             {

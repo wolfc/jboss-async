@@ -37,6 +37,22 @@ public class Async
    private static ExecutorService defaultExecutor = Executors.newFixedThreadPool(10);
    private static ThreadLocal<Future<?>> currentFuture = new ThreadLocal<Future<?>>();
 
+   private static Instance INSTANCE = new Instance();
+   
+   public static class Instance
+   {
+      public <R> Future<R> call(R result)
+      {
+         return Async.call(result);
+      }
+   }
+
+   public static Instance async()
+   {
+      SwitchingInvocationHandler.currentHandler.set(new AsyncInvocationHandler(defaultExecutor));
+      return INSTANCE;
+   }
+
    public static <T> T async(T obj)
    {
       return async(obj, defaultExecutor);
